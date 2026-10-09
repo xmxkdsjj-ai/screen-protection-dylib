@@ -1,0 +1,38 @@
+name: Build iOS dylib
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dylib-build
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Theos and iOS SDK
+        shell: bash
+        run: |
+          brew install ldid xz
+          git clone --depth 1 --recursive https://github.com/theos/theos.git "$HOME/theos"
+          echo "THEOS=$HOME/theos" >> "$GITHUB_ENV"
+          "$HOME/theos/bin/install-sdk" latest
+          xcode-select -p
+          xcrun --sdk iphoneos --show-sdk-path
+
+      - name: Build dylib
+        shell: bash
+        run: bash build.sh
+
+      - name: Upload dylib
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScreenProtection-dylib
+          path: dist/ScreenProtection.dylib
+          if-no-files-found: error
